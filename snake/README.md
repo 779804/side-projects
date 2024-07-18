@@ -20,6 +20,7 @@ This is a simple console-based implementation of the classic Snake game. The gam
     - `A` - Move Left
     - `D` - Move Right
     - `ESC` / `X` - End game
+    - `P` - Pause game
 
 2. **Objective:**
     - Move the snake to eat the food represented by `❰❱`.

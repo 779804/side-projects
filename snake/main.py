@@ -17,11 +17,28 @@ class GameSettings:
     FOOD = "❰❱"
     ALIVE = True
 
-snake_body = [(i, GameSettings.HEIGHT // 2) for i in range(3, 0, -1)]
-object_pos = (GameSettings.WIDTH - 3, GameSettings.HEIGHT // 2)
-direction = (1, 0)
-registered_direction = direction
-death_pos = (0, 0)
+controls = (
+"""Controls:
+- W: Move up
+- A: Move left
+- S: Move down
+- D: Move right
+- ESC / X: End game
+- P: Pause game""")
+
+def init():
+    global snake_body, object_pos, direction, registered_direction, death_pos, score
+
+    GameSettings.ALIVE = True
+    snake_body = [(i, GameSettings.HEIGHT // 2) for i in range(3, 0, -1)]
+    object_pos = (GameSettings.WIDTH - 3, GameSettings.HEIGHT // 2)
+    direction = (1, 0)
+    registered_direction = direction
+    death_pos = (0, 0)
+    score = 0
+
+    clear()
+    print("\033[?25l", end="") # Used to hide cursor
 
 def clear():
     os.system("cls")
@@ -38,7 +55,7 @@ def generateFood(body):
     object_pos = random.choice(available_coords)
 
 def updateBody():
-    global snake_body, registered_direction, death_pos
+    global snake_body, registered_direction, death_pos, score
 
     registered_direction = direction
 
@@ -66,6 +83,7 @@ def updateBody():
         prevLast = new_body[len(new_body)-2]
         last = new_body[len(new_body)-1]
         new_body.append((last[0] - (prevLast[0] - last[0]), last[1] - (prevLast[1] - last[1])))
+        score += 1
         generateFood(new_body)
 
     registered_direction = direction
@@ -90,7 +108,7 @@ def draw():
                 if (x, y) == snake_body[0]:
                     line_str += GameSettings.SNAKE_HEADS[registered_direction]
                 else:
-                    if (x, y) == death_pos:
+                    if (x, y) == death_pos and not GameSettings.ALIVE:
                         line_str += "XX"
                     else:
                         line_str += GameSettings.SNAKE_BODY
@@ -109,6 +127,10 @@ def draw():
         print("+" + "-" * death_x * 2 + "XX" + "-" * (GameSettings.WIDTH - death_x - 1) * 2 + "+")
     else:
         print(horizontal_border)
+    
+    if GameSettings.ALIVE:
+        print(controls)
+        print(f"\nScore: {score}")
 
 def detect_keypress():
     global direction
@@ -128,32 +150,43 @@ def detect_keypress():
                 direction = (-1, 0)
             elif key == 'd' and registered_direction != (-1, 0):
                 direction = (1, 0)
+            elif key == 'p':
+                key = 0
+                while key != 'p':
+                    key = msvcrt.getch().decode('utf-8').lower()
+
 
 def main():
     update_interval = 1 / GameSettings.SPEED
 
-    while GameSettings.ALIVE:
-        start_time = time.time()
+    while True:
+        init()
+        while GameSettings.ALIVE:
+            start_time = time.time()
 
-        print("\033[H", end="") # Used instead of clear() to prevent flickering on screen refresh.
-        updateBody()
-        draw()
-        if GameSettings.ALIVE == False:
-            print("You have died. :(")
-            show_cursor()
+            print("\033[H", end="") # Used instead of clear() to prevent flickering on screen refresh.
+            updateBody()
+            if GameSettings.ALIVE == False:
+                clear() # removes controls and looks cool
+            draw()
+            if GameSettings.ALIVE == False:
+                print("\nYou have died. :(")
+                show_cursor()
+                break
+            if len(snake_body) == GameSettings.WIDTH * GameSettings.HEIGHT:
+                print("\nYou have won!")
+                show_cursor()
+                break
+
+            while time.time() - start_time < update_interval:
+                detect_keypress()
+                time.sleep(0.01)
+        
+        print(f"Your final score was {score}.")
+        show_cursor()
+        r = input("\nWould you like to go again? (Y/N): ")
+        if r.lower() != "y" and r.lower() != "yes":
             break
-        if len(snake_body) == GameSettings.WIDTH * GameSettings.HEIGHT:
-            print("You have won.")
-            show_cursor()
-            break
-
-        while time.time() - start_time < update_interval:
-            detect_keypress()
-            time.sleep(0.01)
-
-    show_cursor()
 
 if __name__ == "__main__":
-    clear()
-    print("\033[?25l", end="") # Used to hide cursor
     main()
