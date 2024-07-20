@@ -5,8 +5,7 @@ import msvcrt
 import json
 
 SAVE_FILE = "save.json"
-SAVE_ATTRS = ["SPEED", "WIDTH", "HEIGHT", "HIGH_SCORE"]
-VALID_ATTRS = SAVE_ATTRS[:-1] # Excluding high score from the list of modifiable attributes.
+VALID_ATTRS = ["SPEED", "WIDTH", "HEIGHT"]
 
 class GameSettings:
     WIDTH = 12
@@ -21,12 +20,22 @@ class GameSettings:
     }
     FOOD = "❰❱"
     ALIVE = True
-    HIGH_SCORE = 0
+    HIGH_SCORE = {}
+
+    @classmethod
+    def get_high_score(gs):
+        """Gets the player's high score based on the current grid size."""
+        if (grid_size := (gs.WIDTH, gs.HEIGHT)) in gs.HIGH_SCORE:
+            return gs.HIGH_SCORE[grid_size]
+        else:
+            gs.HIGH_SCORE[grid_size] = 0
+            return 0
 
     @classmethod
     def save(gs):
         """Saves the game's settings to the SAVE_FILE."""
-        settings = {k: v for k,v in gs.__dict__.items() if k in SAVE_ATTRS}
+        settings = {k: v for k,v in gs.__dict__.items() if k in VALID_ATTRS}
+        settings["HIGH_SCORE"] = {str(k): v for k,v in gs.HIGH_SCORE.items()} # Serializing high scores
 
         with open(SAVE_FILE, 'w') as f:
             json.dump(settings, f)
@@ -39,8 +48,14 @@ class GameSettings:
                 settings = json.load(f)
 
             for k, v in settings.items():
+                if k == "HIGH_SCORE": # De-serialize the high scores
+                    high_scores = {tuple(map(int, key.strip("()").split(", "))): val for key, val in v.items()}
+                    gs.HIGH_SCORE = high_scores
+                    continue
+                elif type(v) != int or v < 1:
+                    continue
                 setattr(gs, k, v)
-        except FileNotFoundError:
+        except (FileNotFoundError, AttributeError, json.JSONDecodeError):
             gs.save()
 
     @classmethod
@@ -60,6 +75,9 @@ class GameSettings:
         except ValueError:
             return ValueError
         
+        if value < 1 or value > 100:
+            return False
+        
         if not attribute in VALID_ATTRS:
             return None
         
@@ -74,6 +92,7 @@ class GameSettings:
         gs.SPEED = 5
         gs.WIDTH = 12
         gs.HEIGHT = 12
+        gs.save()
 
 GAME_CONTROLS_TEXT = (
 """Controls:
@@ -195,7 +214,7 @@ def draw():
     if GameSettings.ALIVE:
         print(GAME_CONTROLS_TEXT)
         print(f"\nScore: {score}")
-        print(f"Best score: {GameSettings.HIGH_SCORE}")
+        print(f"Best score: {GameSettings.get_high_score()}")
 
 def detect_keypress():
     global direction
@@ -221,7 +240,12 @@ def detect_keypress():
                     key = msvcrt.getch().decode('utf-8').lower()
 
 def game():
-    update_interval = 1 / GameSettings.SPEED
+    try:
+        update_interval = 1 / GameSettings.SPEED
+    except TypeError:
+        update_interval = 1/5
+        GameSettings.SPEED = 5
+        GameSettings.save()
 
     while True:
         init()
@@ -246,13 +270,13 @@ def game():
                 detect_keypress()
                 time.sleep(0.01)
         
-        if score > GameSettings.HIGH_SCORE:
-            GameSettings.HIGH_SCORE = score
+        if score > GameSettings.get_high_score():
+            GameSettings.HIGH_SCORE[(GameSettings.WIDTH, GameSettings.HEIGHT)] = score
             GameSettings.save()
             print(f"New best! Your final score was {score}.")
         else:
             print(f"Your final score was {score}.")
-            print(f"Your best score is: {GameSettings.HIGH_SCORE}")
+            print(f"Your best score is: {GameSettings.get_high_score()}")
         show_cursor()
         r = input("\nWould you like to go again? (Y/N): ")
         if r.lower() != "y" and r.lower() != "yes":
@@ -266,6 +290,7 @@ def settings():
         
         print("\nChange a setting by typing its name and a value, or type 'back' to begin the game.")
         print("Examples are 'speed=5' or 'height=10'. You must only type integers as values.")
+        print("Remember that scores are localized to each grid size. You may have a high score of 30 in 12x12, and a high score of 40 on 15x15.")
         print("Type 'reset' to return to default values.")
 
         setting = input("> ").lower()
@@ -273,13 +298,14 @@ def settings():
             break
         elif setting == 'reset':
             GameSettings.reset()
+            clear()
             continue
 
         s = GameSettings.update(setting)
 
         clear()
         if s == False:
-            print("Please ensure that you have entered a valid variable name and value.\n")
+            print("Please ensure that you have entered a valid variable name and value that is also between 1 and 100.\n")
         elif s == None:
             print("Attribute not found.\n")
         elif s == ValueError:
