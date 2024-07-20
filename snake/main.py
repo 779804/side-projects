@@ -2,6 +2,12 @@ import time
 import os
 import random
 import msvcrt
+import json
+
+saveFile = "save.json"
+
+save_attrs = ["SPEED", "WIDTH", "HEIGHT", "HIGH_SCORE"]
+valid_attrs = save_attrs[:len(save_attrs)-1]
 
 class GameSettings:
     WIDTH = 12
@@ -16,6 +22,55 @@ class GameSettings:
     }
     FOOD = "❰❱"
     ALIVE = True
+    HIGH_SCORE = 0
+
+    @classmethod
+    def save(gs):
+        settings = {k: v for k,v in gs.__dict__.items() if k in save_attrs}
+
+        with open(saveFile, 'w') as f:
+            json.dump(settings, f)
+
+    @classmethod
+    def load(gs):
+        try:
+            with open(saveFile, 'r') as f:
+                settings = json.load(f)
+
+            for k, v in settings.items():
+                setattr(gs, k, v)
+        except FileNotFoundError:
+            gs.save()
+
+    @classmethod
+    def update(gs, t: str):
+        if not "=" in t:
+            return False
+        attribute, value = t.split("=")
+
+        if len(attribute) == 0 or len(value) == 0:
+            return False
+        
+        attribute = attribute.upper()
+
+        try:
+            value = int(value)
+        except ValueError:
+            return ValueError
+        
+        if not attribute in valid_attrs:
+            return None
+        
+        setattr(gs, attribute, value)
+        gs.save()
+
+        return True
+    
+    @classmethod
+    def reset(gs):
+        gs.SPEED = 5
+        gs.WIDTH = 12
+        gs.HEIGHT = 12
 
 controls = (
 """Controls:
@@ -131,6 +186,7 @@ def draw():
     if GameSettings.ALIVE:
         print(controls)
         print(f"\nScore: {score}")
+        print(f"Best score: {GameSettings.HIGH_SCORE}")
 
 def detect_keypress():
     global direction
@@ -155,8 +211,7 @@ def detect_keypress():
                 while key != 'p':
                     key = msvcrt.getch().decode('utf-8').lower()
 
-
-def main():
+def game():
     update_interval = 1 / GameSettings.SPEED
 
     while True:
@@ -182,11 +237,55 @@ def main():
                 detect_keypress()
                 time.sleep(0.01)
         
-        print(f"Your final score was {score}.")
+        if score > GameSettings.HIGH_SCORE:
+            GameSettings.HIGH_SCORE = score
+            GameSettings.save()
+            print(f"New best! Your final score was {score}.")
+        else:
+            print(f"Your final score was {score}.")
+            print(f"Your best score is: {GameSettings.HIGH_SCORE}")
         show_cursor()
         r = input("\nWould you like to go again? (Y/N): ")
         if r.lower() != "y" and r.lower() != "yes":
             break
 
+def settings():
+    clear()
+    while True:
+        for setting in valid_attrs:
+            print(f"{setting.lower()} = {getattr(GameSettings, setting)}")
+        
+        print("\nChange a setting by typing its name and a value, or type 'back' to begin the game.")
+        print("Examples are 'speed=5' or 'height=10'. You must only type integers as values.")
+        print("Type 'reset' to return to default values.")
+
+        setting = input("> ").lower()
+        if setting == 'back' or len(setting) == 0:
+            break
+        elif setting == 'reset':
+            GameSettings.reset()
+            continue
+
+        s = GameSettings.update(setting)
+
+        clear()
+        if s == False:
+            print("Please ensure that you have entered a valid variable name and value.\n")
+        elif s == None:
+            print("Attribute not found.\n")
+        elif s == ValueError:
+            print("Please only insert integers as a value.\n")
+
+
 if __name__ == "__main__":
-    main()
+    GameSettings.load()
+    while True:
+        clear()
+        print("Welcome to snake!")
+        print("Press Enter to begin, or type 'settings' to change game settings.")
+        c = input("> ")
+
+        if c.lower() == 'settings':
+            settings()
+        else:
+            game()

@@ -50,14 +50,11 @@ This is a simple console-based implementation of the classic Snake game. The gam
 
 ## Game Settings
 
-The game settings can be adjusted in the `GameSettings` class within the `snake_game.py` file. Here are the available settings:
+The game settings can be adjusted inside the game by typing 'settings' in the main menu. The current available settings are:
 
 - `WIDTH`: Width of the game grid.
 - `HEIGHT`: Height of the game grid.
 - `SPEED`: Speed of the snake's movement.
-- `SNAKE_BODY`: Character representation of the snake's body.
-- `SNAKE_HEADS`: Character representation of the snake's head in different directions.
-- `FOOD`: Character representation of the food.
 
 ## License
 
