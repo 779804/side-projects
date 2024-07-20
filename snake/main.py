@@ -4,10 +4,9 @@ import random
 import msvcrt
 import json
 
-saveFile = "save.json"
-
-save_attrs = ["SPEED", "WIDTH", "HEIGHT", "HIGH_SCORE"]
-valid_attrs = save_attrs[:len(save_attrs)-1]
+SAVE_FILE = "save.json"
+SAVE_ATTRS = ["SPEED", "WIDTH", "HEIGHT", "HIGH_SCORE"]
+VALID_ATTRS = SAVE_ATTRS[:-1] # Excluding high score from the list of modifiable attributes.
 
 class GameSettings:
     WIDTH = 12
@@ -26,15 +25,17 @@ class GameSettings:
 
     @classmethod
     def save(gs):
-        settings = {k: v for k,v in gs.__dict__.items() if k in save_attrs}
+        """Saves the game's settings to the SAVE_FILE."""
+        settings = {k: v for k,v in gs.__dict__.items() if k in SAVE_ATTRS}
 
-        with open(saveFile, 'w') as f:
+        with open(SAVE_FILE, 'w') as f:
             json.dump(settings, f)
 
     @classmethod
     def load(gs):
+        """Loads the game's settings from the SAVE_FILE."""
         try:
-            with open(saveFile, 'r') as f:
+            with open(SAVE_FILE, 'r') as f:
                 settings = json.load(f)
 
             for k, v in settings.items():
@@ -44,6 +45,7 @@ class GameSettings:
 
     @classmethod
     def update(gs, t: str):
+        """Updates a game setting."""
         if not "=" in t:
             return False
         attribute, value = t.split("=")
@@ -58,7 +60,7 @@ class GameSettings:
         except ValueError:
             return ValueError
         
-        if not attribute in valid_attrs:
+        if not attribute in VALID_ATTRS:
             return None
         
         setattr(gs, attribute, value)
@@ -68,11 +70,12 @@ class GameSettings:
     
     @classmethod
     def reset(gs):
+        """Resets the modifiable attributes to the default values."""
         gs.SPEED = 5
         gs.WIDTH = 12
         gs.HEIGHT = 12
 
-controls = (
+GAME_CONTROLS_TEXT = (
 """Controls:
 - W: Move up
 - A: Move left
@@ -82,6 +85,7 @@ controls = (
 - P: Pause game""")
 
 def init():
+    """Initializes game state by resetting all variables."""
     global snake_body, object_pos, direction, registered_direction, death_pos, score
 
     GameSettings.ALIVE = True
@@ -116,6 +120,7 @@ def updateBody():
 
     new_body = []
 
+    # Update positions
     for i in range(len(snake_body)):
         if i == 0:
             original = snake_body[0]
@@ -125,18 +130,17 @@ def updateBody():
             part = snake_body[i - 1]
             new_body.append(part)
     
-    if head_pos in new_body[1:]:
-        GameSettings.ALIVE = False
-        death_pos = head_pos
-        return
-    elif (head_pos[0] > (GameSettings.WIDTH - 1) or head_pos[0] < 0) or (head_pos[1] > (GameSettings.HEIGHT - 1) or head_pos[1] < 0):
+    # Check if player is dead
+    if (head_pos in new_body[1:]) or \
+    (head_pos[0] > (GameSettings.WIDTH - 1) or head_pos[0] < 0 or head_pos[1] > (GameSettings.HEIGHT - 1) or head_pos[1] < 0):
         GameSettings.ALIVE = False
         death_pos = head_pos
         return
 
+    # Check if player is eating food
     if new_body[0] == object_pos:
-        prevLast = new_body[len(new_body)-2]
-        last = new_body[len(new_body)-1]
+        prevLast = new_body[-2]
+        last = new_body[-1]
         new_body.append((last[0] - (prevLast[0] - last[0]), last[1] - (prevLast[1] - last[1])))
         score += 1
         generateFood(new_body)
@@ -145,6 +149,7 @@ def updateBody():
     snake_body = new_body
 
 def draw():
+    # Creates upper border
     horizontal_border = "+" + "-" * GameSettings.WIDTH * 2 + "+"
     if death_pos[1] < 0:
         death_x = death_pos[0]
@@ -152,18 +157,19 @@ def draw():
     else:
         print(horizontal_border)
     
-
+    # Creates lines in-between borders
     for y in range(GameSettings.HEIGHT):
+        # Left-side border
         line_str = "|"
         if death_pos[0] < 0 and death_pos[1] == y:
             line_str = "X"
         
         for x in range(GameSettings.WIDTH):
             if (x, y) in snake_body:
-                if (x, y) == snake_body[0]:
+                if (x, y) == snake_body[0]: # Draw snake head
                     line_str += GameSettings.SNAKE_HEADS[registered_direction]
                 else:
-                    if (x, y) == death_pos and not GameSettings.ALIVE:
+                    if (x, y) == death_pos and not GameSettings.ALIVE: # Draw body as XX or ##
                         line_str += "XX"
                     else:
                         line_str += GameSettings.SNAKE_BODY
@@ -172,19 +178,22 @@ def draw():
             else:
                 line_str += "  "
 
+        # Right-side border
         if death_pos[0] > (GameSettings.WIDTH - 1) and death_pos[1] == y:
             print(line_str + "X")
         else:
             print(line_str + "|")
 
+    # Creates lower border
     if death_pos[1] > (GameSettings.HEIGHT - 1):
         death_x = death_pos[0]
         print("+" + "-" * death_x * 2 + "XX" + "-" * (GameSettings.WIDTH - death_x - 1) * 2 + "+")
     else:
         print(horizontal_border)
     
+    # Game information
     if GameSettings.ALIVE:
-        print(controls)
+        print(GAME_CONTROLS_TEXT)
         print(f"\nScore: {score}")
         print(f"Best score: {GameSettings.HIGH_SCORE}")
 
@@ -252,7 +261,7 @@ def game():
 def settings():
     clear()
     while True:
-        for setting in valid_attrs:
+        for setting in VALID_ATTRS:
             print(f"{setting.lower()} = {getattr(GameSettings, setting)}")
         
         print("\nChange a setting by typing its name and a value, or type 'back' to begin the game.")
