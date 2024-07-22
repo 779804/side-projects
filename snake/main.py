@@ -130,6 +130,9 @@ def generateFood(body):
     all_coords = [(x, y) for x in range(GameSettings.WIDTH) for y in range(GameSettings.HEIGHT)]
     available_coords = [coord for coord in all_coords if coord not in body]
 
+    if len(available_coords) == 0:
+        object_pos = (-1, -1)
+        return
     object_pos = random.choice(available_coords)
 
 def updateBody():
