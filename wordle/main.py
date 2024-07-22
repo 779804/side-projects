@@ -15,7 +15,8 @@ from os import system
 
 letters = ["q","w","e","r","t","y","u","i","o","p","a","s","d","f","g","h","j","k","l","z","x","c","v","b","n","m"]
 
-wordList = "english.txt"
+answersList = "answers.txt"
+guessesList = "guesses.txt"
 DOUBLE = False
 
 from collections import defaultdict
@@ -52,7 +53,7 @@ else:
 
 while True:
   if not DOUBLE:
-    with open(wordList, "r") as file:
+    with open(answersList, "r") as file:
       data = file.read()
       words = data.split()
       word_pos = random.randint(0, len(words)-1)
@@ -80,7 +81,7 @@ while True:
       
       if len(prompt) == 5:
         clear()
-        with open(wordList, 'r') as f:
+        with open(guessesList, 'r') as f:
           if prompt in f.read():
             newg = ""
             wcount = defaultdict(list)
@@ -145,7 +146,7 @@ while True:
       over = False
       clear()
   else:
-    with open(wordList, "r") as file:
+    with open(answersList, "r") as file:
       data = file.read()
       words = data.split()
       word_pos_1 = 0
@@ -177,7 +178,7 @@ while True:
       
       if len(prompt) == 5:
         clear()
-        with open(wordList, 'r') as f:
+        with open(guessesList, 'r') as f:
           if prompt in f.read():
             wordFilter = defaultdict(list)
             if not word1Done:
