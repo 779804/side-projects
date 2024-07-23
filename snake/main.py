@@ -7,18 +7,25 @@ import json
 SAVE_FILE = "save.json"
 VALID_ATTRS = ["SPEED", "WIDTH", "HEIGHT"]
 
+GREEN = "\033[92m"
+RED = "\033[91m"
+WHITE = "\033[0m"
+
+class Objects:
+    SNAKE_BODY = f"{GREEN}##"
+    SNAKE_HEADS = {
+        (1, 0): f"{GREEN}>>",
+        (-1, 0): f"{GREEN}<<",
+        (0, 1): f"{GREEN}VV",
+        (0, -1): f"{GREEN}ɅɅ"
+    }
+    DEATH_ON_BODY_COLLIDE = f"{GREEN}XX"
+    FOOD = f"{RED}❰❱"
+
 class GameSettings:
     WIDTH = 12
     HEIGHT = 12
     SPEED = 5
-    SNAKE_BODY = "##"
-    SNAKE_HEADS = {
-        (1, 0): ">>",
-        (-1, 0): "<<",
-        (0, 1): "VV",
-        (0, -1): "ɅɅ"
-    }
-    FOOD = "❰❱"
     ALIVE = True
     HIGH_SCORE = {}
 
@@ -189,14 +196,14 @@ def draw():
         for x in range(GameSettings.WIDTH):
             if (x, y) in snake_body:
                 if (x, y) == snake_body[0]: # Draw snake head
-                    line_str += GameSettings.SNAKE_HEADS[registered_direction]
+                    line_str += Objects.SNAKE_HEADS[registered_direction] + WHITE
                 else:
                     if (x, y) == death_pos and not GameSettings.ALIVE: # Draw body as XX or ##
-                        line_str += "XX"
+                        line_str += Objects.DEATH_ON_BODY_COLLIDE + WHITE
                     else:
-                        line_str += GameSettings.SNAKE_BODY
+                        line_str += Objects.SNAKE_BODY + WHITE
             elif (x, y) == object_pos:
-                line_str += GameSettings.FOOD
+                line_str += Objects.FOOD + WHITE
             else:
                 line_str += "  "
 
