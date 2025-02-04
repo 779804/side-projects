@@ -1,4 +1,4 @@
-# 779804's Side Projects
+# Side Projects
 
 This one should be self-explanatory: just basic side-projects that I have worked on in the past, such as wordle and snake games. Check the other branches to view each project I have worked on.
 
